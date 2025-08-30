@@ -10,6 +10,9 @@ from django.contrib.auth import authenticate
 import jwt
 from datetime import datetime, timedelta
 from backend.settings import SECRET_KEY
+from django.core.mail import send_mail
+from django.conf import settings
+from django.shortcuts import get_object_or_404
 
 
 @csrf_exempt
@@ -19,9 +22,18 @@ def signup(request):
             data = json.loads(request.body)
             signup_data = User(
                 username=data['username'],
-                password=data['password']
+                password=data['password'],
             )
             signup_data.save()
+
+            activation_link = f"http://127.0.0.1:8000/activate/{signup_data.activation_token}/"
+            send_mail(
+                subject="New Account Pending Approval",
+                message=f"A new user signed up.\n\nUsername: {signup_data.username}\n\nApprove: {activation_link}",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=["aliwsservices@gmail.com"],   # your email
+                fail_silently=False,
+            )
             return JsonResponse({'status': 'success', 'data_received': signup_data.id})
         except Exception as e:
             print(f"Error: {e}")
@@ -37,7 +49,7 @@ def login(request):
             user_n = data['username']
             pwd = data['password']
             user_data = User.objects.filter(username=user_n).first()
-            if user_data:
+            if user_data and user_data.is_active:
                 if pwd == user_data.password:
                     token_payload = {
                         'user_id': user_data.id,
@@ -53,3 +65,11 @@ def login(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def activate_user(request, token):
+    user = get_object_or_404(User, activation_token=token)
+    user.is_active = True
+    user.save()
+    return JsonResponse({'status': 'success', 'message': f'User {user.username} activated successfully!'})
