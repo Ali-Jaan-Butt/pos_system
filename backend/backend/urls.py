@@ -17,7 +17,11 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
+from backend_app import views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path('sign-up/user/', views.signup, name='signup'),
+    path('login/user/', views.login, name='login'),
+    path('activate/<uuid:token>/', views.activate_user, name='activate_user'),
 ]
