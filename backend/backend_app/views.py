@@ -49,7 +49,8 @@ def login(request):
             user_n = data['username']
             pwd = data['password']
             user_data = User.objects.filter(username=user_n).first()
-            if user_data and user_data.is_active == True:
+            print(user_data)
+            if user_data and user_data.is_active == 'True':
                 print('yes')
                 if pwd == user_data.password:
                     token_payload = {
