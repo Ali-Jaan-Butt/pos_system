@@ -1,5 +1,5 @@
 // src/pages/Signup.js
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
@@ -28,7 +28,7 @@ export default function Signup() {
 
       if (data.status === "success") {
         setMsg({ type: "success", text: "Signup successful! Check your email for approval." });
-        setTimeout(() => navigate("/login"), 2000);
+        setTimeout(() => navigate("/"), 2000);
       } else {
         setMsg({ type: "error", text: data.message || "Signup failed!" });
       }

@@ -1,5 +1,5 @@
 // src/pages/Login.js
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
@@ -41,9 +41,9 @@ export default function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[#fffbea]">
+    <div className="flex items-center justify-center min-h-screen bg-secondary">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-xl">
-        <h2 className="text-3xl font-bold text-center text-[#4caf50]">Welcome Back</h2>
+        <h2 className="text-3xl font-bold text-center text-primary">Welcome Back</h2>
         {msg && (
           <div className={`p-2 rounded text-center ${msg.type === "error" ? "bg-red-100 text-red-600" : "bg-green-100 text-green-700"}`}>
             {msg.text}

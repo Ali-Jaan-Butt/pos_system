@@ -1,10 +1,13 @@
-import React from 'react'
 import TopNav from '../components/topNav'
+import { Outlet } from 'react-router-dom'
 
 function Dashboard() {
     return (
-        <div className='bg-[#fffbea] h-full w-full'>
+        <div className='h-full w-full bg-gray-50'>
             <TopNav />
+            <div className='p-4' >
+                <Outlet />
+            </div>
         </div>
     )
 }

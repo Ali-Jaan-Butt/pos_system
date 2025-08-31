@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-
+import { useState } from "react";
+import { Link } from "react-router-dom";
 function TopNav() {
   const [openDropdown, setOpenDropdown] = useState(null);
 
@@ -15,22 +15,31 @@ function TopNav() {
       </h1>
 
       {/* Navigation */}
-      <ul className="flex gap-x-8 relative font-medium">
+      <ul className="flex gap-x-8 relative font-medium my-auto">
         {/* Home */}
         <li>
-          <button className="hover:text-[#fffbea] transition">Home</button>
+          <Link to="/dashboard">
+            <button className="hover:text-[#fffbea] transition">Home</button>
+          </Link>
         </li>
 
-        {/* Products Dropdown */}
+        {/* Products */}
+        <li>
+          <Link to="/dashboard/products">
+            <button className="hover:text-[#fffbea] transition">Products</button>
+          </Link>
+        </li>
+
+        {/* Stock Dropdown */}
         <li className="relative group">
           <button
-            onClick={() => toggleDropdown("products")}
+            onClick={() => toggleDropdown("stock")}
             className="flex items-center gap-1 hover:text-[#fffbea] transition"
           >
-            Products
+            Stock
             <span className="text-sm">▼</span>
           </button>
-          {openDropdown === "products" && (
+          {openDropdown === "stock" && (
             <ul className="absolute left-0 mt-3 w-48 bg-white text-gray-800 rounded-xl shadow-xl overflow-hidden animate-fadeIn">
               <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
                 Milk Stock
@@ -69,10 +78,7 @@ function TopNav() {
           )}
         </li>
 
-        {/* Contact */}
-        <li>
-          <button className="hover:text-[#fffbea] transition">Contact</button>
-        </li>
+
       </ul>
 
       {/* Logout Button */}
