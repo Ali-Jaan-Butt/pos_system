@@ -24,4 +24,6 @@ urlpatterns = [
     path('sign-up/user/', views.signup, name='signup'),
     path('login/user/', views.login, name='login'),
     path('activate/<uuid:token>/', views.activate_user, name='activate_user'),
+    path('add-products/', views.add_product, name='add_product'),
+    path('get/product/data/', views.get_product_data, name='get_product_data')
 ]

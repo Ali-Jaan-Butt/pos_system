@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 import json
-from backend_app.models import User
+from backend_app.models import User, Products
 from rest_framework.response import Response
 from django.http import JsonResponse, HttpResponse
 from rest_framework.authtoken.models import Token
@@ -23,6 +23,7 @@ def signup(request):
             signup_data = User(
                 username=data['username'],
                 password=data['password'],
+                user_type=data['user_type']
             )
             signup_data.save()
 
@@ -31,7 +32,7 @@ def signup(request):
                 subject="New Account Pending Approval",
                 message=f"A new user signed up.\n\nUsername: {signup_data.username}\n\nApprove: {activation_link}",
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=["aliwsservices@gmail.com"],   # your email
+                recipient_list=["aliwsservices@gmail.com"],
                 fail_silently=False,
             )
             return JsonResponse({'status': 'success', 'data_received': signup_data.id})
@@ -59,7 +60,7 @@ def login(request):
                         'exp': datetime.utcnow() + timedelta(hours=1)
                     }
                     token = jwt.encode(token_payload, SECRET_KEY, algorithm='HS256')
-                    return JsonResponse({'status': 'success', 'data_received': {'username': user_data.username, 'password': user_data.password, 'token': token}})
+                    return JsonResponse({'status': 'success', 'data_received': {'username': user_data.username, 'password': user_data.password, 'user_type': user_data.user_type, 'token': token}})
                 else:
                     return JsonResponse({'error': 'Invalid Credentials'}, status=400)
             else:
@@ -71,7 +72,53 @@ def login(request):
 
 @csrf_exempt
 def activate_user(request, token):
-    user = get_object_or_404(User, activation_token=token)
-    user.is_active = True
-    user.save()
-    return JsonResponse({'status': 'success', 'message': f'User {user.username} activated successfully!'})
+    if request.method == 'GET':
+        user = get_object_or_404(User, activation_token=token)
+        user.is_active = True
+        user.save()
+        return JsonResponse({'status': 'success', 'message': f'User {user.username} activated successfully!'})
+    return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def add_product(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            product_data = Products(
+                product_name=data['product_name'],
+                size=data['size'],
+                boxes=data['boxes'],
+                extra_units=data['extra_units'],
+                unit_per_box=data['unit_per_box'],
+                per_liter_value=data['per_liter_value'],
+                total_ml_in=data['total_ml_in'],
+                total_value_in=data['total_value_in']
+            )
+            product_data.save()
+            return JsonResponse({'status': 'success', 'data_received': product_data.id})
+        except Exception as e:
+            print(f"Error: {e}")
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def get_product_data(request):
+    if request.method == 'GET':
+        products_all = Products.objects.all()
+        products_data = [
+            {
+                "product_name":pr.product_name,
+                "size":pr.size,
+                "boxes":pr.boxes,
+                "extra_units":pr.extra_units,
+                "unit_per_box":pr.unit_per_box,
+                "per_liter_value":pr.per_liter_value,
+                "total_ml_in":pr.total_ml_in,
+                "total_value_in":pr.total_value_in
+            }
+            for pr in products_all
+        ]
+        return JsonResponse({'status': 'success', 'data': products_data})
+    return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})
