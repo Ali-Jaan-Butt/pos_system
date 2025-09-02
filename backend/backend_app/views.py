@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 import json
-from backend_app.models import User, Products
+from backend_app.models import User, Products, Inventory
 from rest_framework.response import Response
 from django.http import JsonResponse, HttpResponse
 from rest_framework.authtoken.models import Token
@@ -85,6 +85,15 @@ def add_product(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+            product_check = Products.objects.filter(
+                product_name=data['product_name'],
+                size=data['size'],
+                branded=data['branded'],
+                unit_per_box=data['unit_per_box'],
+                per_liter_value=data['per_liter_value']
+            ).first()
+            if product_check:
+                return JsonResponse({'status': 'No inserted', 'message': 'Product already added.'}, status=200)
             product_data = Products(
                 product_name=data['product_name'],
                 size=data['size'],
@@ -96,7 +105,7 @@ def add_product(request):
             return JsonResponse({'status': 'success', 'data_received': product_data.id})
         except Exception as e:
             print(f"Error: {e}")
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
 
@@ -111,8 +120,32 @@ def get_product_data(request):
                 "branded":pr.branded,
                 "unit_per_box":pr.unit_per_box,
                 "per_liter_value":pr.per_liter_value,
+                "approved":pr.approved
             }
             for pr in products_all
         ]
         return JsonResponse({'status': 'success', 'data': products_data})
     return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})
+
+
+@csrf_exempt
+def approve_product_add(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        inventory_check = Inventory.objects.filter(
+            product_name=data['product_name'],
+            size=data['size'],
+            branded=data['branded'],
+            unit_per_box=data['unit_per_box'],
+            per_liter_value=data['per_liter_value']
+        ).first()
+        if inventory_check:
+            return JsonResponse({'status': 'No inserted', 'message': 'Product already added.'}, status=200)
+
+
+@csrf_exempt
+def add_inventory(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        inventory_data = Inventory(product_name=data['product_name']).first()
+        inventory_data
