@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 import json
-from backend_app.models import User, Products, Inventory
+from backend_app.models import User, Products, Inventory, Pending_inventory
 from rest_framework.response import Response
 from django.http import JsonResponse, HttpResponse
 from rest_framework.authtoken.models import Token
@@ -131,21 +131,142 @@ def get_product_data(request):
 @csrf_exempt
 def approve_product_add(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        inventory_check = Inventory.objects.filter(
-            product_name=data['product_name'],
-            size=data['size'],
-            branded=data['branded'],
-            unit_per_box=data['unit_per_box'],
-            per_liter_value=data['per_liter_value']
-        ).first()
-        if inventory_check:
-            return JsonResponse({'status': 'No inserted', 'message': 'Product already added.'}, status=200)
+        try:
+            data = json.loads(request.body)
+            product_check = Products.objects.filter(
+                product_name=data['product_name'],
+                size=data['size'],
+                branded=data['branded'],
+                unit_per_box=data['unit_per_box'],
+                per_liter_value=data['per_liter_value']
+            ).first()
+            if product_check:
+                product_check.approved = True
+                return JsonResponse({'status': 'success', 'message': 'Product approved.'}, status=200)
+        except Exception as e:
+            print(f"Error: {e}")
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
 
 @csrf_exempt
 def add_inventory(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        inventory_data = Inventory(product_name=data['product_name']).first()
-        inventory_data
+        try:
+            data = json.loads(request.body)
+            product_name=data['product_name'],
+            size = data['size']
+            boxes = data['boxes']
+            branded = data['branded'],
+            extra_units = data['extra_units']
+            unit_per_box = data['unit_per_box']
+            per_liter_value = data['per_liter_value']
+            total_units = (int(boxes)*int(unit_per_box))+int(extra_units)
+            total_ml_in = size*total_units
+            total_value_in = per_liter_value*total_ml_in
+            inventory_data = Pending_inventory(
+                product_name=product_name,
+                size=size,
+                boxes=boxes,
+                branded=branded,
+                extra_units=extra_units,
+                unit_per_box=unit_per_box,
+                per_liter_value=per_liter_value,
+                total_ml_in=total_ml_in,
+                total_value_in=total_value_in,
+                total_units=total_units
+            )
+            inventory_data.save()
+            return JsonResponse({'status': 'success', 'data_received': inventory_data.id})
+        except Exception as e:
+            print(f"Error: {e}")
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def get_pending_inventory(request):
+    if request.method == 'GET':
+        inventory_all = Pending_inventory.objects.all()
+        pending_data = [
+            {
+                "product_name":p.product_name,
+                "size":p.size,
+                "boxes":p.boxes,
+                "branded":p.branded,
+                "extra_units":p.extra_units,
+                "unit_per_box":p.unit_per_box,
+                "per_liter_value":p.per_liter_value,
+                "total_ml_in":p.total_ml_in,
+                "total_value_in":p.total_value_in,
+                "total_units":p.total_units,
+                "approved":p.approved
+            }
+            for p in inventory_all
+        ]
+        return JsonResponse({'status': 'success', 'data': pending_data})
+    return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})
+
+
+@csrf_exempt
+def approve_inventory(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            product_name=data['product_name'],
+            size = data['size']
+            boxes = data['boxes']
+            branded = data['branded'],
+            extra_units = data['extra_units']
+            unit_per_box = data['unit_per_box']
+            per_liter_value = data['per_liter_value']
+            total_units = data['total_units']
+            total_ml_in = data['total_ml_in']
+            total_value_in = data['total_value_in']
+            inventory_check = Inventory.objects.filter(
+                product_name=product_name,
+                size=size,
+                branded=branded,
+                unit_per_box=unit_per_box,
+                per_liter_value=per_liter_value
+            ).first()
+            pending_check = Pending_inventory.objects.filter(
+                product_name=product_name,
+                size=size,
+                boxes=boxes,
+                branded=branded,
+                extra_units=extra_units,
+                unit_per_box=unit_per_box,
+                per_liter_value=per_liter_value,
+                total_units=total_units,
+                total_ml_in=total_ml_in,
+                total_value_in=total_value_in
+            ).first()
+            if inventory_check:
+                inventory_check.boxes = inventory_check.boxes + boxes
+                inventory_check.extra_units = inventory_check.extra_units + extra_units
+                inventory_check.total_units = inventory_check.total_units + total_units
+                inventory_check.total_ml_in = inventory_check.total_ml_in + total_ml_in
+                inventory_check.total_value_in = inventory_check.total_value_in + total_value_in
+                inventory_check.save()
+                pending_check.delete()
+                return JsonResponse({'status': 'success', 'data_received': inventory_check.id})
+            inventory_data = Inventory(
+                product_name=product_name,
+                size=size,
+                boxes=boxes,
+                branded=branded,
+                extra_units=extra_units,
+                unit_per_box=unit_per_box,
+                per_liter_value=per_liter_value,
+                total_ml_in=total_ml_in,
+                total_value_in=total_value_in,
+                total_units=total_units
+            )
+            inventory_data.save()
+            pending_check.delete()
+            return JsonResponse({'status': 'success', 'data_received': inventory_data.id})
+        except Exception as e:
+            print(f"Error: {e}")
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)

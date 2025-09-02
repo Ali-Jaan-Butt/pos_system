@@ -23,7 +23,7 @@ class Inventory(models.Model):
     per_liter_value = models.FloatField()
     total_ml_in = models.IntegerField()
     total_value_in = models.FloatField()
-    approved = models.BooleanField(default=False)
+    total_units = models.IntegerField(default=0)
 
     def __str__(self):
         return self.product_name
@@ -36,6 +36,23 @@ class Products(models.Model):
     unit_per_box = models.IntegerField()
     per_liter_value = models.FloatField()
     approved = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.product_name
+    
+
+class Pending_inventory(models.Model):
+    product_name = models.CharField(max_length=200)
+    size = models.CharField(max_length=200)
+    branded = models.BooleanField()
+    boxes = models.IntegerField()
+    extra_units = models.IntegerField()
+    unit_per_box = models.IntegerField()
+    per_liter_value = models.FloatField()
+    total_ml_in = models.IntegerField()
+    total_value_in = models.FloatField()
+    approved = models.BooleanField(default=False)
+    total_units = models.IntegerField(default=0)
 
     def __str__(self):
         return self.product_name

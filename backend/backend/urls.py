@@ -25,5 +25,9 @@ urlpatterns = [
     path('login/user/', views.login, name='login'),
     path('activate/<uuid:token>/', views.activate_user, name='activate_user'),
     path('add-products/', views.add_product, name='add_product'),
-    path('get/product/data/', views.get_product_data, name='get_product_data')
+    path('get/product/data/', views.get_product_data, name='get_product_data'),
+    path('approve-product-add/', views.approve_product_add, name='approve_product_add'),
+    path('add-inventory-data/', views.add_inventory, name='add_inventory'),
+    path('get-pending-inventory/', views.get_pending_inventory, name='get_pending_inventory'),
+    path('approve-add-inventory/', views.approve_inventory, name='approve_inventory')
 ]
