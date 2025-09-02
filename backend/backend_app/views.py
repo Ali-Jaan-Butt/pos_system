@@ -88,12 +88,9 @@ def add_product(request):
             product_data = Products(
                 product_name=data['product_name'],
                 size=data['size'],
-                boxes=data['boxes'],
-                extra_units=data['extra_units'],
+                branded=data['branded'],
                 unit_per_box=data['unit_per_box'],
                 per_liter_value=data['per_liter_value'],
-                total_ml_in=data['total_ml_in'],
-                total_value_in=data['total_value_in']
             )
             product_data.save()
             return JsonResponse({'status': 'success', 'data_received': product_data.id})
@@ -111,12 +108,9 @@ def get_product_data(request):
             {
                 "product_name":pr.product_name,
                 "size":pr.size,
-                "boxes":pr.boxes,
-                "extra_units":pr.extra_units,
+                "branded":pr.branded,
                 "unit_per_box":pr.unit_per_box,
                 "per_liter_value":pr.per_liter_value,
-                "total_ml_in":pr.total_ml_in,
-                "total_value_in":pr.total_value_in
             }
             for pr in products_all
         ]
