@@ -56,3 +56,20 @@ class Pending_inventory(models.Model):
 
     def __str__(self):
         return self.product_name
+
+class Invoice(models.Model):
+    company = models.CharField(max_length=255, default="My Dairy Shop")
+    invoice_no = models.CharField(max_length=32, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    grand_total = models.DecimalField(max_digits=12, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.invoice_no} - {self.company}"
+
+
+class InvoiceItem(models.Model):
+    invoice = models.ForeignKey(Invoice, related_name="items", on_delete=models.CASCADE)
+    item_name = models.CharField(max_length=255)
+    qty = models.PositiveIntegerField()
+    price = models.DecimalField(max_digits=12, decimal_places=2)  # unit price
+    total = models.DecimalField(max_digits=12, decimal_places=2)  # qty * price

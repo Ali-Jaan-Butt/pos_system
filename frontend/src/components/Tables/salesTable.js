@@ -1,67 +1,88 @@
-import React from "react";
-import { Table } from "antd";
+import React, { useEffect, useState } from "react";
+import { Card, Table, DatePicker, Space, Typography, message } from "antd";
+import dayjs from "dayjs";
 
-function SalesTable() {
-  // Mock sales data (replace later with backend data)
-  const dataSource = [
-    {
-      key: "1",
-      invoiceNo: "INV-1001",
-      customer: "Ali",
-      totalAmount: 1500,
-      date: new Date().toLocaleDateString(),
-    },
-    {
-      key: "2",
-      invoiceNo: "INV-1002",
-      customer: "Ahmed",
-      totalAmount: 2500,
-      date: new Date().toLocaleDateString(),
-    },
-    {
-      key: "3",
-      invoiceNo: "INV-1003",
-      customer: "Sara",
-      totalAmount: 1800,
-      date: new Date().toLocaleDateString(),
-    },
-  ];
+const { Text, Title } = Typography;
 
-  // Table columns
+export default function SalesTable({ refreshToken }) {
+  const [date, setDate] = useState(dayjs());
+  const [rows, setRows] = useState([]);
+  const [grandTotal, setGrandTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const fetchDaily = async (d) => {
+    const iso = d.format("YYYY-MM-DD");
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `http://127.0.0.1:8000/api/sales/daily/?date=${iso}`
+      );
+      const data = await res.json();
+      if (res.ok && data.status === "success") {
+        setRows(data.rows);
+        setGrandTotal(data.grand_total);
+      } else {
+        message.error(data.message || "Failed to load daily sales");
+      }
+    } catch (e) {
+      console.error(e);
+      message.error("Network error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDaily(date);
+  }, [date]);
+
+  useEffect(() => {
+    if (refreshToken) fetchDaily(date);
+  }, [refreshToken]);
+
   const columns = [
+    { title: "Time", dataIndex: "time", key: "time", width: 90 },
+    { title: "Invoice #", dataIndex: "invoice_no", key: "invoice_no" },
+    { title: "Item", dataIndex: "item_name", key: "item_name" },
+    { title: "Qty", dataIndex: "qty", key: "qty", width: 70 },
     {
-      title: "Invoice No",
-      dataIndex: "invoiceNo",
-      key: "invoiceNo",
+      title: "Price",
+      dataIndex: "price",
+      key: "price",
+      render: (v) => `Rs. ${v}`,
     },
     {
-      title: "Customer",
-      dataIndex: "customer",
-      key: "customer",
-    },
-    {
-      title: "Total Amount (PKR)",
-      dataIndex: "totalAmount",
-      key: "totalAmount",
-    },
-    {
-      title: "Date",
-      dataIndex: "date",
-      key: "date",
+      title: "Total",
+      dataIndex: "total",
+      key: "total",
+      render: (v) => <Text strong>{`Rs. ${v}`}</Text>,
     },
   ];
 
   return (
-    <div className="p-4 bg-white shadow-md rounded-xl">
-      <h2 className="text-xl font-bold mb-4">📊 Today's Sales</h2>
+    <Card
+      title={
+        <Space>
+          <Title level={4} className="!mb-0">
+            📊 Daily Sales
+          </Title>
+          <DatePicker
+            value={date}
+            onChange={(d) => d && setDate(d)}
+            allowClear={false}
+          />
+        </Space>
+      }
+      extra={<Text strong>Grand Total: Rs. {grandTotal}</Text>}
+      className="w-full shadow-xl rounded-xl"
+    >
       <Table
-        dataSource={dataSource}
+        rowKey={(r, idx) => `${r.invoice_no}-${r.item_name}-${idx}`}
         columns={columns}
-        pagination={false}
-        bordered
+        dataSource={rows}
+        loading={loading}
+        pagination={{ pageSize: 10 }}
       />
-    </div>
+    </Card>
   );
 }
-
-export default SalesTable;

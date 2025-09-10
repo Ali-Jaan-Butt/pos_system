@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 import json
-from backend_app.models import User, Products, Inventory, Pending_inventory
+from backend_app.models import User, Products, Inventory, Pending_inventory, Invoice, InvoiceItem
 from rest_framework.response import Response
 from django.http import JsonResponse, HttpResponse
 from rest_framework.authtoken.models import Token
@@ -94,6 +94,7 @@ def add_product(request):
             ).first()
             if product_check:
                 return JsonResponse({'status': 'No inserted', 'message': 'Product already added.'}, status=200)
+            
             product_data = Products(
                 product_name=data['product_name'],
                 size=data['size'],
@@ -102,12 +103,13 @@ def add_product(request):
                 per_liter_value=data['per_liter_value'],
             )
             product_data.save()
-            return JsonResponse({'status': 'success', 'data_received': product_data.id})
+            return JsonResponse({'status': 'success', 'data_received': product_data.id}, status=201)
+        
         except Exception as e:
             print(f"Error: {e}")
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
 @csrf_exempt
 def get_product_data(request):
@@ -115,18 +117,18 @@ def get_product_data(request):
         products_all = Products.objects.all()
         products_data = [
             {
-                "product_name":pr.product_name,
-                "size":pr.size,
-                "branded":pr.branded,
-                "unit_per_box":pr.unit_per_box,
-                "per_liter_value":pr.per_liter_value,
-                "approved":pr.approved
+                "key": pr.id,  # key for AntD Table
+                "product_name": pr.product_name,
+                "size": pr.size,
+                "branded": pr.branded,
+                "unit_per_box": pr.unit_per_box,
+                "per_liter_value": pr.per_liter_value,
+                "approved": pr.approved,
             }
             for pr in products_all
         ]
         return JsonResponse({'status': 'success', 'data': products_data})
     return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})
-
 
 @csrf_exempt
 def approve_product_add(request):
@@ -270,3 +272,107 @@ def approve_inventory(request):
             print(f"Error: {e}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+def _generate_invoice_no():
+    # e.g. INV-20250908-000123
+    today = timezone.now().strftime("%Y%m%d")
+    seq = Invoice.objects.filter(created_at__date=timezone.localdate()).count() + 1
+    return f"INV-{today}-{seq:06d}"
+
+
+@csrf_exempt
+def create_invoice(request):
+    """
+    POST JSON:
+    {
+      "company": "My Dairy Shop",
+      "items": [
+        {"name": "Milk", "qty": 2, "price": 50},
+        {"name": "Bread", "qty": 1, "price": 80}
+      ]
+    }
+    """
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+        items = payload.get('items', [])
+        company = payload.get('company', 'My Dairy Shop')
+        if not items:
+            return JsonResponse({'status': 'error', 'message': 'No items provided'}, status=400)
+
+        # compute grand total
+        grand_total = sum((item['qty'] * float(item['price'])) for item in items)
+
+        with transaction.atomic():
+            inv = Invoice.objects.create(
+                company=company,
+                invoice_no=_generate_invoice_no(),
+                grand_total=grand_total
+            )
+            bulk = []
+            for it in items:
+                total = float(it['price']) * int(it['qty'])
+                bulk.append(InvoiceItem(
+                    invoice=inv,
+                    item_name=it['name'],
+                    qty=int(it['qty']),
+                    price=float(it['price']),
+                    total=total
+                ))
+            InvoiceItem.objects.bulk_create(bulk)
+
+        return JsonResponse({
+            'status': 'success',
+            'invoice': {
+                'id': inv.id,
+                'invoice_no': inv.invoice_no,
+                'company': inv.company,
+                'created_at': inv.created_at.isoformat(),
+                'grand_total': float(inv.grand_total)
+            }
+        }, status=201)
+
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@csrf_exempt
+def daily_sales(request):
+    """
+    GET /api/sales/daily/?date=YYYY-MM-DD
+    Returns: items for the day + invoice header info + totals
+    """
+    if request.method != 'GET':
+        return JsonResponse({'status': 'error', 'message': 'Only GET allowed'}, status=405)
+    try:
+        date_str = request.GET.get('date')
+        if date_str:
+            day = datetime.strptime(date_str, "%Y-%m-%d").date()
+        else:
+            day = timezone.localdate()
+
+        invoices = Invoice.objects.filter(created_at__date=day).order_by('-created_at')
+        items_flat = []
+        grand_total_sum = 0.0
+
+        for inv in invoices:
+            grand_total_sum += float(inv.grand_total)
+            for it in inv.items.all():
+                items_flat.append({
+                    "invoice_no": inv.invoice_no,
+                    "time": inv.created_at.strftime("%H:%M"),
+                    "item_name": it.item_name,
+                    "qty": it.qty,
+                    "price": float(it.price),
+                    "total": float(it.total),
+                })
+
+        return JsonResponse({
+            'status': 'success',
+            'date': day.isoformat(),
+            'grand_total': grand_total_sum,
+            'rows': items_flat
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

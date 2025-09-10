@@ -29,5 +29,7 @@ urlpatterns = [
     path('approve-product-add/', views.approve_product_add, name='approve_product_add'),
     path('add-inventory-data/', views.add_inventory, name='add_inventory'),
     path('get-pending-inventory/', views.get_pending_inventory, name='get_pending_inventory'),
-    path('approve-add-inventory/', views.approve_inventory, name='approve_inventory')
+    path('approve-add-inventory/', views.approve_inventory, name='approve_inventory'),
+    path('api/invoices/create/', views.create_invoice, name='create_invoice'),
+    path('api/sales/daily/', views.daily_sales, name='daily_sales'),
 ]

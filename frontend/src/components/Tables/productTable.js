@@ -1,76 +1,31 @@
-import React, { useEffect, useState } from "react";
-import { Table, Card, Tag, Image, Button, Space, Popconfirm, message } from "antd";
+import React from "react";
+import { Table, Card, Tag, Button, Space, Popconfirm, message } from "antd";
 import { ReloadOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 
-const ProductTable = () => {
-  const [loading, setLoading] = useState(false);
-  const [products, setProducts] = useState([]);
 
-  // Dummy fetch simulation
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = () => {
-    setLoading(true);
-
-    setTimeout(() => {
-      setProducts([
-        {
-          key: 1,
-          name: "Full Cream Milk",
-          price: 120,
-          size: 1000,
-          branded: "yes",
-          image: "https://via.placeholder.com/60",
-        },
-        {
-          key: 2,
-          name: "Yogurt Cup",
-          price: 40,
-          size: 240,
-          branded: "no",
-          image: "https://via.placeholder.com/60",
-        },
-      ]);
-      setLoading(false);
-    }, 1000);
-  };
-
+const ProductTable = ({ products, loading, fetchProducts }) => {
   const handleEdit = (record) => {
-    message.info(`Editing ${record.name}`);
+    message.info(`Editing ${record.product_name}`);
   };
 
   const handleDelete = (key) => {
-    setProducts(products.filter((item) => item.key !== key));
     message.success("Deleted successfully");
+    // Here you can call backend delete API and then refresh
+    fetchProducts();
   };
 
   const columns = [
-    { title: "Name", dataIndex: "name", key: "name" },
-    { title: "Price (₨)", dataIndex: "price", key: "price" },
+    { title: "Name", dataIndex: "product_name", key: "name" },
     { title: "Size (ML)", dataIndex: "size", key: "size" },
     {
-      title: "Branded",
-      dataIndex: "branded",
-      key: "branded",
-      render: (value) =>
-        value === "yes" ? (
-          <Tag color="green">Yes</Tag>
-        ) : (
-          <Tag color="volcano">No</Tag>
-        ),
+      title: "Branded", dataIndex: "branded", key: "branded",
+      render: (value) => value === "yes" ? <Tag color="green">Yes</Tag> : <Tag color="volcano">No</Tag>
     },
+    { title: "Unit/Box", dataIndex: "unit_per_box", key: "unit_per_box" },
+    { title: "Per Liter Value", dataIndex: "per_liter_value", key: "per_liter_value" },
     {
-      title: "Image",
-      dataIndex: "image",
-      key: "image",
-      render: (img) =>
-        img ? (
-          <Image src={img} width={45} height={45} style={{ borderRadius: 8 }} />
-        ) : (
-          <Tag>No Image</Tag>
-        ),
+      title: "Approved", dataIndex: "approved", key: "approved",
+      render: (val) => val ? <Tag color="blue">Approved</Tag> : <Tag color="orange">Pending</Tag>
     },
     {
       title: "Actions",
@@ -92,12 +47,7 @@ const ProductTable = () => {
             okText="Yes"
             cancelText="No"
           >
-            <Button
-              icon={<DeleteOutlined />}
-              type="primary"
-              danger
-              size="small"
-            >
+            <Button icon={<DeleteOutlined />} type="primary" danger size="small">
               Delete
             </Button>
           </Popconfirm>
@@ -119,8 +69,7 @@ const ProductTable = () => {
           Refresh
         </Button>
       }
-      className="w-full shadow-xl rounded-xl"
-      style={{ borderRadius: 16, overflow: "hidden" }}
+      className="w-full shadow-xl rounded-xl h-full"
     >
       <Table
         columns={columns}

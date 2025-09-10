@@ -1,26 +1,46 @@
 import React, { useState } from "react";
-import { Form, Input, InputNumber, Button, Select, Upload, Card } from "antd";
-import { UploadOutlined } from "@ant-design/icons";
+import { Form, Input, InputNumber, Button, Select, Card, message } from "antd";
 
-const AddProduct = () => {
+const AddProduct = ({ onProductAdded }) => {
   const [loading, setLoading] = useState(false);
 
-  const onFinish = (values) => {
+  const onFinish = async (values) => {
     setLoading(true);
-    console.log("Form Data: ", values);
 
-    // Later connect this to backend API
-    setTimeout(() => {
+    const payload = {
+      product_name: values.name,
+      size: values.size,
+      branded: values.branded,
+      unit_per_box: values.unit_per_box,
+      per_liter_value: values.per_liter_value,
+    };
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/add-products/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === "success") {
+        message.success("✅ Product added successfully!");
+        onProductAdded(); // refresh table
+      } else {
+        message.warning(data.message || "⚠️ Product already exists");
+      }
+    } catch (error) {
+      console.error(error);
+      message.error("❌ Failed to add product");
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   return (
     <div className="">
-      <Card
-        title="➕ Add New Product"
-        className="w-full shadow-lg rounded-xl"
-      >
+      <Card title="➕ Add New Product" className="w-full shadow-lg rounded-xl">
         <Form layout="vertical" onFinish={onFinish}>
           {/* Product Name */}
           <Form.Item
@@ -31,17 +51,25 @@ const AddProduct = () => {
             <Input placeholder="Enter product name" />
           </Form.Item>
 
-          {/* Price */}
+          {/* Unit per Box */}
           <Form.Item
-            label="Price"
-            name="price"
-            rules={[{ required: true, message: "Please enter price" }]}
+            label="Unit Per Box"
+            name="unit_per_box"
+            rules={[{ required: true, message: "Please enter units per box" }]}
+          >
+            <InputNumber className="w-full" min={1} placeholder="e.g., 12" />
+          </Form.Item>
+
+          {/* Per Liter Value */}
+          <Form.Item
+            label="Per Liter Value"
+            name="per_liter_value"
+            rules={[{ required: true, message: "Please enter per liter value" }]}
           >
             <InputNumber
               className="w-full"
               min={1}
-              placeholder="Enter price"
-              prefix="₨"
+              placeholder="Enter per liter value"
             />
           </Form.Item>
 
@@ -66,16 +94,9 @@ const AddProduct = () => {
             rules={[{ required: true, message: "Please select option" }]}
           >
             <Select placeholder="Is this branded?">
-              <Select.Option value="yes">Yes</Select.Option>
-              <Select.Option value="no">No</Select.Option>
+              <Select.Option value="True">Yes</Select.Option>
+              <Select.Option value="False">No</Select.Option>
             </Select>
-          </Form.Item>
-
-          {/* Upload Image (Optional) */}
-          <Form.Item label="Upload Product Image (Optional)" name="image">
-            <Upload beforeUpload={() => false} maxCount={1}>
-              <Button icon={<UploadOutlined />}>Click to Upload</Button>
-            </Upload>
           </Form.Item>
 
           {/* Submit Button */}
