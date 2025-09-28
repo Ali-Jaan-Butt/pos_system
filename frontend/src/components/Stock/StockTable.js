@@ -1,30 +1,35 @@
 import React from "react";
-import { Table, Card, Tag, Button, Space, Popconfirm, message } from "antd";
+import { Table, Card, Button, Space, Popconfirm, message, Tag } from "antd";
 import { ReloadOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 
-
-const ProductTable = ({ products, loading, fetchProducts }) => {
+const StockTable = ({ stockData, loading, fetchStock }) => {
   const handleEdit = (record) => {
-    message.info(`Editing ${record.product_name}`);
+    message.info(`Editing stock of ${record.product_name}`);
+    // Open Edit modal or navigate to edit page
   };
 
   const handleDelete = (key) => {
-    message.success("Deleted successfully");
-    fetchProducts();
+    message.success("Stock entry deleted successfully");
+    // Call backend delete API and refresh
+    fetchStock();
   };
 
   const columns = [
-    { title: "Name", dataIndex: "product_name", key: "name" },
-    { title: "Size (ML)", dataIndex: "size", key: "size" },
-    {
-      title: "Branded", dataIndex: "branded", key: "branded",
-      render: (value) => value === "yes" ? <Tag color="green">Yes</Tag> : <Tag color="volcano">No</Tag>
+    { title: "Product Name", dataIndex: "product_name", key: "product_name" },
+    { title: "Boxes", dataIndex: "boxes", key: "boxes" },
+    { title: "Extra Units", dataIndex: "extra_units", key: "extra_units" },
+    { title: "Total Units", dataIndex: "total_units", key: "total_units" },
+    { 
+      title: "Total Value", 
+      dataIndex: "total_value", 
+      key: "total_value",
+      render: (val) => <Tag color="green">Rs. {val}</Tag>
     },
-    { title: "Unit/Box", dataIndex: "unit_per_box", key: "unit_per_box" },
-    { title: "Per Liter Value", dataIndex: "per_liter_value", key: "per_liter_value" },
-    {
-      title: "Approved", dataIndex: "approved", key: "approved",
-      render: (val) => val ? <Tag color="blue">Approved</Tag> : <Tag color="orange">Pending</Tag>
+    { 
+      title: "Timestamp", 
+      dataIndex: "timestamp", 
+      key: "timestamp",
+      render: (val) => <span className="text-gray-500">{val}</span>
     },
     {
       title: "Actions",
@@ -41,7 +46,7 @@ const ProductTable = ({ products, loading, fetchProducts }) => {
             Edit
           </Button>
           <Popconfirm
-            title="Are you sure to delete?"
+            title="Are you sure to delete this stock entry?"
             onConfirm={() => handleDelete(record.key)}
             okText="Yes"
             cancelText="No"
@@ -57,11 +62,11 @@ const ProductTable = ({ products, loading, fetchProducts }) => {
 
   return (
     <Card
-      title="📦 Products List"
+      title="📦 Stock Entries"
       extra={
         <Button
           icon={<ReloadOutlined />}
-          onClick={fetchProducts}
+          onClick={fetchStock}
           loading={loading}
           type="dashed"
         >
@@ -72,7 +77,7 @@ const ProductTable = ({ products, loading, fetchProducts }) => {
     >
       <Table
         columns={columns}
-        dataSource={products}
+        dataSource={stockData}
         loading={loading}
         pagination={{ pageSize: 5 }}
         bordered={false}
@@ -82,4 +87,4 @@ const ProductTable = ({ products, loading, fetchProducts }) => {
   );
 };
 
-export default ProductTable;
+export default StockTable;

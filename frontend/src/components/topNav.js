@@ -32,26 +32,13 @@ function TopNav() {
 
         {/* Stock Dropdown */}
         <li className="relative group">
-          <button
-            onClick={() => toggleDropdown("stock")}
-            className="flex items-center gap-1 hover:text-[#fffbea] transition"
-          >
-            Stock
-            <span className="text-sm">▼</span>
-          </button>
-          {openDropdown === "stock" && (
-            <ul className="absolute left-0 mt-3 w-48 bg-white text-gray-800 rounded-xl shadow-xl overflow-hidden animate-fadeIn">
-              <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                Milk Stock
-              </li>
-              <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                Dairy Products
-              </li>
-              <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                Inventory Reports
-              </li>
-            </ul>
-          )}
+          <Link to="/dashboard/stock">
+            <button
+              className="flex items-center gap-1 hover:text-[#fffbea] transition"
+            >
+              Stock
+            </button>
+          </Link>
         </li>
 
         {/* About Dropdown */}

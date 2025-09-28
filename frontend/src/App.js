@@ -4,6 +4,7 @@ import Signup from './pages/signUp'
 import Dashboard from './pages/dashboard'
 import DashHome from './pages/dashHome'
 import ProductsPage from './pages/Products'
+import ProductStock from './pages/stocks'
 function App() {
   return (
     <Router>
@@ -13,6 +14,7 @@ function App() {
         <Route path='/dashboard' element={<Dashboard />} >
           <Route index element={<DashHome />} />
           <Route path='products' element={<ProductsPage />} />
+          <Route path='stock' element={<ProductStock />} />
         </Route>
       </Routes>
     </Router>
