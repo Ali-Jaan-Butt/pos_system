@@ -8,6 +8,8 @@ function ProductStock() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [products, setProducts] = useState([]);
+  const [stockData, setStockData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   // ✅ Fetch products from API
   useEffect(() => {
@@ -15,7 +17,6 @@ function ProductStock() {
       try {
         const res = await fetch("http://127.0.0.1:8000/get/product/data/");
         const data = await res.json();
-        console.log("Fetched products:", data);
         if (Array.isArray(data.data)) {
           setProducts(data.data);
         } else {
@@ -29,49 +30,58 @@ function ProductStock() {
     fetchProducts();
   }, []);
 
+  // ✅ Fetch stock data
+  const fetchStock = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("http://127.0.0.1:8000/get-pending-inventory/");
+      const data = await res.json();
+      if (Array.isArray(data.data)) {
+        setStockData(data.data);
+      } else {
+        message.error("Invalid stock data format");
+      }
+    } catch (error) {
+      console.error("Error fetching stock:", error);
+      message.error("Failed to fetch stock data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Fetch stock on mount
+  useEffect(() => {
+    fetchStock();
+  }, []);
+
   // ✅ Options for dropdown
   const productOptions = products.map((p) => ({
     id: p.id,
-    value: p.product_name, // what appears in the input
-    label: `${p.product_name} - ${p.size} ML`, // dropdown display
+    value: p.product_name,
+    size: p.size,
+    label: `${p.product_name} - ${p.size} ML`,
     product: p,
   }));
 
-  // Dummy stock data (replace with backend API)
-  const allStockEntries = [
-    {
-      key: 1,
-      product_id: 1,
-      product_name: "Product A",
-      boxes: 5,
-      extra_units: 3,
-      total_units: 63,
-      total_value: 3150,
-      timestamp: "2025-09-28 11:20",
-    },
-    {
-      key: 2,
-      product_id: 2,
-      product_name: "Product B",
-      boxes: 2,
-      extra_units: 6,
-      total_units: 54,
-      total_value: 1620,
-      timestamp: "2025-09-28 11:30",
-    },
-  ];
-
   // ✅ Filter stock data for selected product
-  const filteredStock = allStockEntries.filter(
-    (entry) => entry.product_id === selectedProduct?.id
-  );
+  const filteredStock = selectedProduct
+    ? stockData.filter(
+        (entry) =>
+          entry.product_name === selectedProduct.product_name &&
+          entry.size === selectedProduct.size
+      )
+    : [];
 
   // ✅ Handle product selection
   const handleSelectProduct = (value, option) => {
     setSelectedProduct(option.product);
-    setSearch(option.label); 
+    setSearch(option.label);
     setShowForm(false);
   };
+
+  console.log("Selected Product:", selectedProduct);
+  console.log("Filtered Stock Data:", filteredStock);
+  console.log("All Stock Data:", stockData);
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -86,7 +96,9 @@ function ProductStock() {
             onSelect={handleSelectProduct}
             placeholder="Search and select product..."
             filterOption={(inputValue, option) =>
-              String(option.label).toLowerCase().includes(inputValue.toLowerCase())
+              String(option.label)
+                .toLowerCase()
+                .includes(inputValue.toLowerCase())
             }
           />
 
@@ -105,7 +117,7 @@ function ProductStock() {
       {/* ✅ Show form if toggled */}
       {showForm && selectedProduct && (
         <Card className="mb-6 shadow-lg rounded-xl">
-          <AddStockForm product={selectedProduct} />
+          <AddStockForm product={selectedProduct} fetchStock={fetchStock} />
         </Card>
       )}
 
@@ -113,8 +125,8 @@ function ProductStock() {
       {selectedProduct && (
         <StockTable
           stockData={filteredStock}
-          loading={false}
-          fetchStock={() => console.log("Fetch stock from backend")}
+          loading={loading}
+          fetchStock={fetchStock}
         />
       )}
     </div>

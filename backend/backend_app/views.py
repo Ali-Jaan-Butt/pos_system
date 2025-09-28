@@ -13,33 +13,40 @@ from backend.settings import SECRET_KEY
 from django.core.mail import send_mail
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+import traceback
 
 
 @csrf_exempt
-def signup(request):
-    if request.method == 'POST':
+def signup_user(request):
+    if request.method == "POST":
         try:
             data = json.loads(request.body)
-            signup_data = User(
-                username=data['username'],
-                password=data['password'],
-                user_type=data['user_type']
-            )
-            signup_data.save()
+            print("Received data:", data)   # ✅ log here
 
-            activation_link = f"http://127.0.0.1:8000/activate/{signup_data.activation_token}/"
-            send_mail(
-                subject="New Account Pending Approval",
-                message=f"A new user signed up.\n\nUsername: {signup_data.username}\n\nApprove: {activation_link}",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=["aliwsservices@gmail.com"],
-                fail_silently=False,
-            )
-            return JsonResponse({'status': 'success', 'data_received': signup_data.id})
+            username = data.get("username")
+            password = data.get("password")
+            user_type = data.get("user_type")
+
+            # Basic validation
+            if not username or not password or not user_type:
+                return JsonResponse({"status": "error", "message": "All fields required"}, status=400)
+
+            # Example user creation (with Django’s User model)
+            from django.contrib.auth.models import User
+            if User.objects.filter(username=username).exists():
+                return JsonResponse({"status": "error", "message": "Username already exists"}, status=400)
+
+            user = User(username=username)
+            user.set_password(password)   # ✅ always hash passwords
+            user.save()
+
+            return JsonResponse({"status": "success", "message": "User created"})
         except Exception as e:
-            print(f"Error: {e}")
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+            print("Error in signup_user:", e)          # ✅ log error
+            print(traceback.format_exc())              # ✅ full stacktrace
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+    return JsonResponse({"status": "error", "message": "Invalid request"}, status=405)
 
 
 @csrf_exempt
@@ -156,16 +163,19 @@ def add_inventory(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            product_name=data['product_name'],
+
+            product_name = data['product_name']   # removed comma
             size = data['size']
-            boxes = data['boxes']
-            branded = data['branded'],
-            extra_units = data['extra_units']
-            unit_per_box = data['unit_per_box']
-            per_liter_value = data['per_liter_value']
-            total_units = (int(boxes)*int(unit_per_box))+int(extra_units)
-            total_ml_in = size*total_units
-            total_value_in = per_liter_value*total_ml_in
+            boxes = int(data['boxes'])
+            branded = data['branded']             # removed comma
+            extra_units = int(data['extra_units'])
+            unit_per_box = int(data['unit_per_box'])
+            per_liter_value = float(data['per_liter_value'])
+
+            total_units = (boxes * unit_per_box) + extra_units
+            total_ml_in = size * total_units
+            total_value_in = per_liter_value * total_ml_in
+
             inventory_data = Pending_inventory(
                 product_name=product_name,
                 size=size,
@@ -179,11 +189,15 @@ def add_inventory(request):
                 total_units=total_units
             )
             inventory_data.save()
+
             return JsonResponse({'status': 'success', 'data_received': inventory_data.id})
+
         except Exception as e:
             print(f"Error: {e}")
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
 
 
 @csrf_exempt
@@ -207,6 +221,29 @@ def get_pending_inventory(request):
             for p in inventory_all
         ]
         return JsonResponse({'status': 'success', 'data': pending_data})
+    return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})
+
+@csrf_exempt
+def get_complete_inventory(request):
+    if request.method == 'GET':
+        inventory_all = Inventory.objects.all()
+        complete_data = [
+            {
+                "product_name":p.product_name,
+                "size":p.size,
+                "boxes":p.boxes,
+                "branded":p.branded,
+                "extra_units":p.extra_units,
+                "unit_per_box":p.unit_per_box,
+                "per_liter_value":p.per_liter_value,
+                "total_ml_in":p.total_ml_in,
+                "total_value_in":p.total_value_in,
+                "total_units":p.total_units,
+                "approved":p.approved
+            }
+            for p in inventory_all
+        ]
+        return JsonResponse({'status': 'success', 'data': complete_data})
     return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})
 
 

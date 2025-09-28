@@ -1,32 +1,63 @@
 import React, { useState } from "react";
+import { message } from "antd";
 
-export default function AddStockForm({ product }) {
-    console.log("Product in AddStockForm:", product);
+export default function AddStockForm({ product, refreshStock }) {
   const [boxes, setBoxes] = useState(0);
   const [extraUnits, setExtraUnits] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   // Calculations
   const totalUnits =
-    (parseInt(boxes) || 0) * (product?.unitsPerBox || 0) +
+    (parseInt(boxes) || 0) * (product?.unit_per_box || 0) +
     (parseInt(extraUnits) || 0);
 
-  const totalValue = totalUnits * (product?.valuePerUnit || 0);
+  const totalValue = totalUnits * (product?.per_liter_value || 0);
 
   // Submit
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!product) {
-      alert("No product selected");
+      message.warning("Please select a product first");
       return;
     }
+
     const payload = {
-      productId: product.id,
-      boxes,
-      extraUnits,
-      totalUnits,
-      totalValue,
+      product_name: product.product_name,
+      size: product.size,
+      branded: product.branded ?? false,
+      boxes: parseInt(boxes),
+      extra_units: parseInt(extraUnits),
+      unit_per_box: product.unit_per_box ?? 0,
+      per_liter_value: product.per_liter_value ?? 0,
     };
-    console.log("Send to backend:", payload);
-    // API call here
+
+    try {
+      setLoading(true);
+      const res = await fetch("http://127.0.0.1:8000/add-inventory-data/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (data.status === "success") {
+        message.success("Stock added successfully!");
+        setBoxes(0);
+        setExtraUnits(0);
+
+        // refresh stock table
+        if (refreshStock) refreshStock();
+      } else {
+        message.error("Error: " + data.message);
+      }
+    } catch (err) {
+      console.error("Error sending stock:", err);
+      message.error("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!product) {
@@ -40,7 +71,10 @@ export default function AddStockForm({ product }) {
   return (
     <div className="mx-auto">
       <h2 className="text-2xl font-bold text-blue-600 mb-4">
-        Add Stock for <span className="text-green-600">{product.product_name} - {product.size} ML</span>
+        Add Stock for{" "}
+        <span className="text-green-600">
+          {product.product_name} - {product.size} ML
+        </span>
       </h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -101,9 +135,10 @@ export default function AddStockForm({ product }) {
       {/* Submit */}
       <button
         onClick={handleSubmit}
-        className="mt-6 w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition"
+        disabled={loading}
+        className="mt-6 w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition disabled:opacity-50"
       >
-        Add Stock
+        {loading ? "Adding..." : "Add Stock"}
       </button>
     </div>
   );

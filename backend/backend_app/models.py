@@ -43,7 +43,7 @@ class Products(models.Model):
 
 class Pending_inventory(models.Model):
     product_name = models.CharField(max_length=200)
-    size = models.CharField(max_length=200)
+    size = models.IntegerField()
     branded = models.BooleanField()
     boxes = models.IntegerField()
     extra_units = models.IntegerField()

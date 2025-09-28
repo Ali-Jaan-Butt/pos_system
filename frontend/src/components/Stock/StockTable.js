@@ -3,8 +3,9 @@ import { Table, Card, Button, Space, Popconfirm, message, Tag } from "antd";
 import { ReloadOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 
 const StockTable = ({ stockData, loading, fetchStock }) => {
+  console.log("StockTable received stockData:", stockData);
   const handleEdit = (record) => {
-    message.info(`Editing stock of ${record.product_name}`);
+    message.info(`Editing stock of ${record.product_name} - ${record.size}ML`);
     // Open Edit modal or navigate to edit page
   };
 
@@ -16,20 +17,21 @@ const StockTable = ({ stockData, loading, fetchStock }) => {
 
   const columns = [
     { title: "Product Name", dataIndex: "product_name", key: "product_name" },
+    { title: "Size (ML)", dataIndex: "size", key: "size" },
     { title: "Boxes", dataIndex: "boxes", key: "boxes" },
     { title: "Extra Units", dataIndex: "extra_units", key: "extra_units" },
     { title: "Total Units", dataIndex: "total_units", key: "total_units" },
-    { 
-      title: "Total Value", 
-      dataIndex: "total_value", 
-      key: "total_value",
-      render: (val) => <Tag color="green">Rs. {val}</Tag>
+    {
+      title: "Total Value",
+      dataIndex: "total_value_in", // ✅ match API field
+      key: "total_value_in",
+      render: (val) => <Tag color="green">Rs. {val}</Tag>,
     },
-    { 
-      title: "Timestamp", 
-      dataIndex: "timestamp", 
-      key: "timestamp",
-      render: (val) => <span className="text-gray-500">{val}</span>
+    {
+      title: "Approved",
+      dataIndex: "approved",
+      key: "approved",
+      render: (val) => (val ? <Tag color="blue">Yes</Tag> : <Tag color="red">No</Tag>),
     },
     {
       title: "Actions",
@@ -81,6 +83,7 @@ const StockTable = ({ stockData, loading, fetchStock }) => {
         loading={loading}
         pagination={{ pageSize: 5 }}
         bordered={false}
+        rowKey={(record, index) => `${record.product_name}-${record.size}-${index}`}
         rowClassName="hover:bg-gray-50"
       />
     </Card>
